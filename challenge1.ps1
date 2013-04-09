@@ -19,69 +19,56 @@ $objArray = @()
 
 #start of while loop to build servers
 while ($i -le $servercount){
-$name = $commonname + $i
-$string = '{
+    $name = $commonname + $i
+    $string = '{
     "server" : {
         "name" : "$name",
         "imageRef" : "$imageID",
         "flavorRef" : "$flavor"
     }
-}'
+    }'
 
-$htoken = @{"X-Auth-Token" = "$token"}
-$url = '$endpoint/$custDDI/servers'
-$url = $ExecutionContext.InvokeCommand.ExpandString($url)
-$string = $ExecutionContext.InvokeCommand.ExpandString($string)
+    $htoken = @{"X-Auth-Token" = "$token"}
+    $url = '$endpoint/$custDDI/servers'
+    $url = $ExecutionContext.InvokeCommand.ExpandString($url)
+    $string = $ExecutionContext.InvokeCommand.ExpandString($string)
 
-$request = Invoke-RestMethod -uri  $url -Method POST -Body $string -ContentType application/json -Headers $htoken
-$serverid = $request.server.id
-$adminpass = $request.server.adminPass
+    $request = Invoke-RestMethod -uri  $url -Method POST -Body $string -ContentType application/json -Headers $htoken
+    $serverid = $request.server.id
+    $adminpass = $request.server.adminPass
 
-"Name: " + $name
-"Server ID: " + $serverid
-"Admin Pass: " + $adminpass
+    "Name: " + $name
+    "Server ID: " + $serverid
+    "Admin Pass: " + $adminpass
 
-#create temp object and insert current info
-$objTemp = $objProto | Select-Object *
-$objTemp.Name = $name
-$objTemp.ID = $serverid
-$objTemp.AdminPass = $adminpass
-$objTemp.PublicIP = $pubicIP
-$objTemp.PrivateIP = $privateIP
+    #create temp object and insert current info
+    $objTemp = $objProto | Select-Object *
+    $objTemp.Name = $name
+    $objTemp.ID = $serverid
+    $objTemp.AdminPass = $adminpass
+    $objTemp.PublicIP = $pubicIP
+    $objTemp.PrivateIP = $privateIP
 
-#add object to array of objects
-$objArray += $objTemp
-$i++}
+    #add object to array of objects
+    $objArray += $objTemp
+    $i++}
 # end of while loop
 
 "Please wait while we get the IP"
-
-#loop to check IP
-#:outerloop
-#$timeout = new-timespan -Minutes 60
-#$sw = [diagnostics.stopwatch]::StartNew()
-#while ($sw.elapsed -lt $timeout){
-
 
 Start-Sleep -s 90 
 #start of while loop to get IP
 $j = 1
 while ($j -le $servercount){
-$url2 = $url + '/detail?name='+ '$commonname' + '$j'
-$url2 = $ExecutionContext.InvokeCommand.ExpandString($url2)
-$request2 = Invoke-RestMethod -uri  $url2 -Headers $htoken
+    $url2 = $url + '/detail?name='+ '$commonname' + '$j'
+    $url2 = $ExecutionContext.InvokeCommand.ExpandString($url2)
+    $request2 = Invoke-RestMethod -uri  $url2 -Headers $htoken
 
-"name: "+ $request2.servers.name
-"id: "+ $request2.servers.id
-"Public: " + $request2.servers.addresses.public.addr
-"Prifate: " + $request2.servers.addresses.private.addr
-"flavor: "+ $request2.servers.flavor.id + " progress: " + $request2.servers.progress
-"`n"
-
-#junk will later try to add to the array of objects
-#$objArray[i-1].PublicIP = $PublicIP
-#$objArray[i-1].PrivateIP = $PrivateIP
-#$arrayname = $objArray.name
-$j++
+    "name: "+ $request2.servers.name
+    "id: "+ $request2.servers.id
+    "Public: " + $request2.servers.addresses.public.addr
+    "Private: " + $request2.servers.addresses.private.addr
+    "flavor: "+ $request2.servers.flavor.id + " progress: " + $request2.servers.progress
+    "`n"
+    $j++
 }
-#}
