@@ -1,12 +1,63 @@
-﻿Import-Module $PSScriptRoot\get_token.psm1
-Get-Token
+﻿#variables
 
 $imageID = '8a3a9f96-b997-46fd-b7a8-a9e740796ffd'#Ubuntu12
 $flavor = 2
 $servercount = 2
-$commonname = 'apitest'
+$commonname = 'finaltest'
 $endpoint = 'https://dfw.servers.api.rackspacecloud.com/v2'
 $i = 1
+
+#load ini
+# This code assumes that no blank lines are in the file--a blank line will cause an early termination of the read loop
+#ini values should not be in quotes it will break the request
+# Confirm that the file exists on disk
+
+$IniFile_NME="$PSScriptRoot\auth.ini"
+
+dir $IniFile_NME
+
+# Parse the file
+
+$InputFile = [System.IO.File]::OpenText("$IniFile_NME")
+
+while($InputRecord = $InputFile.ReadLine())
+    {
+
+        # Determine the position of the equal sign (=)
+
+        $Pos = $InputRecord.IndexOf('=')
+        
+
+        # Determine the length of the record
+
+        $Len = $InputRecord.Length
+        
+
+        # Parse the record
+
+        $Variable_NME = $InputRecord.Substring(1, $Pos -1)
+        $VariableValue_STR = $InputRecord.Substring($Pos + 1, $Len -$Pos -1)
+
+        # Create a new variable based on the parsed information
+
+        new-variable -name $Variable_NME -value $VariableValue_STR 
+        get-variable -name $Variable_NME
+    }
+#close ini
+$InputFile.Close()
+
+#authenticate and return ddi and token
+#string
+$string = '{"auth" : {"RAX-KSKEY:apiKeyCredentials" : {"username" : "$user", "apiKey" : "$apikey"}}}'
+
+#expands variables within string
+$post = $ExecutionContext.InvokeCommand.ExpandString($string) 
+#sets request to variable to be used later
+$request = Invoke-RestMethod -uri $authurl -Method Post -Body $post -ContentType application/json
+
+$token = $request.access.token.id 
+$custDDI = $request.access.token.tenant.id
+
 
 #Create Object Template and Array
 $objProto = New-Object PSObject

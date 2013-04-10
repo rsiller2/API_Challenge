@@ -1,11 +1,67 @@
-﻿Import-Module $PSScriptRoot\get_token.psm1 
-Get-Token
-
+﻿
 #variables to create image
     $imagename = 'testimage'
-    $serverID ='805f0706-d1e0-4919-af2d-18f29d7b6b54'
+    $serverID ='90ce0d19-7455-4ffa-a57f-3468afbd15c5'
     $endpoint = 'https://dfw.servers.api.rackspacecloud.com/v2'
-    $string = '{
+    
+#variables used to create server
+    $flavor = 2
+    $newservername = 'finaltest2'
+    
+#load ini
+# This code assumes that no blank lines are in the file--a blank line will cause an early termination of the read loop
+#ini values should not be in quotes it will break the request
+# Confirm that the file exists on disk
+
+$IniFile_NME="$PSScriptRoot\auth.ini"
+
+dir $IniFile_NME
+
+# Parse the file
+
+$InputFile = [System.IO.File]::OpenText("$IniFile_NME")
+
+while($InputRecord = $InputFile.ReadLine())
+    {
+
+        # Determine the position of the equal sign (=)
+
+        $Pos = $InputRecord.IndexOf('=')
+        
+
+        # Determine the length of the record
+
+        $Len = $InputRecord.Length
+        
+
+        # Parse the record
+
+        $Variable_NME = $InputRecord.Substring(1, $Pos -1)
+        $VariableValue_STR = $InputRecord.Substring($Pos + 1, $Len -$Pos -1)
+
+        # Create a new variable based on the parsed information
+
+        new-variable -name $Variable_NME -value $VariableValue_STR -force
+        get-variable -name $Variable_NME
+    }
+#close ini
+$InputFile.Close()
+
+#authenticate and return ddi and token
+#string
+$string = '{"auth" : {"RAX-KSKEY:apiKeyCredentials" : {"username" : "$user", "apiKey" : "$apikey"}}}'
+
+#expands variables within string
+$post = $ExecutionContext.InvokeCommand.ExpandString($string) 
+
+#sets request to variable to be used later
+$request = Invoke-RestMethod -uri $authurl -Method Post -Body $post -ContentType application/json
+
+$token = $request.access.token.id 
+$custDDI = $request.access.token.tenant.id
+
+#reqest to create image
+$string = '{
     "createImage" : {
     "name" : "$imagename",
     "metadata": {
@@ -13,19 +69,6 @@ Get-Token
     }
     }
     }'
-
-#variables used to create server
-    $flavor = 2
-    $newservername = 'apitest3'
-    $string2 = '{
-    "server" : {
-    "name" : "$newservername",
-    "imageRef" : "$imageID",
-    "flavorRef" : "$flavor"
-    }
-    }'
-
-#reqest to create image
 $string = $ExecutionContext.InvokeCommand.ExpandString($string)
 $htoken = @{"X-Auth-Token" = "$token"}
 $url = '$endpoint/$custDDI/servers/$serverID/action'
@@ -43,6 +86,13 @@ $created = $request2.images.created
 $status = $request2.images.status
 $progress = $request2.images.progress
 $imageID = $request2.images.id
+$string2 = '{
+    "server" : {
+    "name" : "$newservername",
+    "imageRef" : "$imageID",
+    "flavorRef" : "$flavor"
+    }
+    }'
 
 'Name: ' + $name
 'ID: ' + $id
